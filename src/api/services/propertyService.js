@@ -1,59 +1,40 @@
-import axiosInstance from '../axiosConfig';
+import axiosInstance from '../axiosInstance';
+import { unwrapResponse } from '../../utils/apiHelpers';
 
 export const propertyService = {
-  // Get all properties for public browsing (Tenant view)
   getAllProperties: async () => {
     const response = await axiosInstance.get('/api/Property');
-    return response.data;
+    return unwrapResponse(response) ?? [];
   },
 
-  // Get a single property by ID
   getPropertyById: async (id) => {
     const response = await axiosInstance.get(`/api/Property/${id}`);
-    return response.data;
+    return unwrapResponse(response);
   },
 
-  // Get properties owned/assigned to current Agent/Admin
   getMyProperties: async () => {
     const response = await axiosInstance.get('/api/Property/my-properties');
-    return response.data;
+    return unwrapResponse(response) ?? [];
   },
 
-  // Get specific owned property details
   getMyPropertyById: async (id) => {
     const response = await axiosInstance.get(`/api/Property/my-properties/${id}`);
-    return response.data;
+    return unwrapResponse(response);
   },
 
-  // Create a new property (Agent/Admin only)
   createProperty: async (propertyData) => {
     const response = await axiosInstance.post('/api/Property', propertyData);
-    return response.data;
+    return unwrapResponse(response);
   },
 
-  // Update an existing property (Agent/Admin only)
   updateProperty: async (id, propertyData) => {
     const response = await axiosInstance.put(`/api/Property/${id}`, propertyData);
-    return response.data;
+    return unwrapResponse(response);
   },
 
-  // Delete a property (Agent/Admin only)
   deleteProperty: async (id) => {
     const response = await axiosInstance.delete(`/api/Property/${id}`);
     return response.data;
-  },
-
-  // Upload property thumbnail
-  uploadThumbnail: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await axiosInstance.post('/api/upload/thumbnail', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data; // Usually returns { url: '...' } or a string with the image path
   },
 };
 

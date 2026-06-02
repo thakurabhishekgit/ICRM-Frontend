@@ -10,12 +10,12 @@ import { colors } from '../theme/theme';
 
 const PAGE_TITLES = {
   '/tenant/dashboard': 'Tenant Dashboard',
-  '/tenant/browse': 'Browse Properties',
   '/tenant/requests': 'My Requests',
   '/tenant/leases': 'My Leases',
+  '/properties': 'Browse Properties',
   '/agent/dashboard': 'Agent Dashboard',
   '/agent/properties': 'My Properties',
-  '/agent/properties/new': 'Add Property',
+  '/agent/properties/create': 'Create Property',
   '/agent/requests': 'Lease Requests',
   '/agent/leases': 'Leases',
   '/admin/dashboard': 'Admin Dashboard',

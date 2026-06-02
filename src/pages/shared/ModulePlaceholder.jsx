@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/dashboard/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { getDashboardPath } from '../../utils/roleRoutes';
@@ -53,6 +53,7 @@ const MODULE_COPY = {
 
 const ModulePlaceholder = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const copy = MODULE_COPY[location.pathname] || {
     title: 'Module',
@@ -73,7 +74,7 @@ const ModulePlaceholder = () => {
         title="Coming in Phase 3"
         description={copy.description}
         actionLabel="Back to Dashboard"
-        onAction={() => window.location.assign(getDashboardPath(user?.role))}
+        onAction={() => navigate(getDashboardPath(user?.role))}
       />
     </>
   );

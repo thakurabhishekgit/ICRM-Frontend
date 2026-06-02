@@ -1,131 +1,101 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Grid, Typography, Box, Button, Alert } from '@mui/material';
+import { Box, Button, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-
 import PropertyCard from '../../components/PropertyCard';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
+import PageHeader from '../../components/dashboard/PageHeader';
 import propertyService from '../../api/services/propertyService';
+import { useToast } from '../../context/ToastContext';
+import { getApiErrorMessage } from '../../utils/apiHelpers';
 
-export const MyProperties = () => {
+const MyProperties = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState([]);
   const [error, setError] = useState('');
-  
-  // Deletion state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [propertyToDelete, setPropertyToDelete] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchProperties = async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await propertyService.getMyProperties();
-      setProperties(data || []);
+      setProperties(data);
     } catch (err) {
-      console.error(err);
-      setError('Failed to fetch your properties inventory.');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  useEffect(() => { fetchProperties(); }, []);
 
-  const handleViewDetails = (id) => {
-    navigate(`/tenant/properties/${id}`);
-  };
-
-  const handleEditClick = (property) => {
-    navigate(`/agent/properties/edit/${property.id}`);
-  };
-
-  const handleDeleteClick = (id) => {
-    setPropertyToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!propertyToDelete) return;
+  const handleDelete = async () => {
+    if (!deleteId) return;
     setDeleteLoading(true);
     try {
-      await propertyService.deleteProperty(propertyToDelete);
-      setProperties(properties.filter(p => p.id !== propertyToDelete));
-      setDeleteDialogOpen(false);
+      await propertyService.deleteProperty(deleteId);
+      showToast('Property deleted successfully');
+      setDeleteId(null);
+      fetchProperties();
     } catch (err) {
-      console.error(err);
-      setError('Failed to delete the property. It may have associated active leases.');
+      setError(getApiErrorMessage(err));
     } finally {
       setDeleteLoading(false);
-      setPropertyToDelete(null);
     }
   };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            My Managed Properties
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Manage details, upload media files, and monitor tenant request hooks.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/agent/properties/new')}
-        >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <PageHeader title="My Properties" subtitle="Manage your commercial property listings." />
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/agent/properties/create')}>
           Add Property
         </Button>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
       {loading ? (
-        <Loader message="Loading property portfolio..." />
+        <Loader message="Loading properties..." />
       ) : properties.length === 0 ? (
         <EmptyState
-          title="No properties in portfolio"
-          description="List your first commercial real estate space to start receiving lease requests."
-          actionText="Add A Property"
-          onActionClick={() => navigate('/agent/properties/new')}
+          title="No properties yet"
+          description="Create your first listing to start receiving lease requests."
+          actionLabel="Add Property"
+          onAction={() => navigate('/agent/properties/create')}
         />
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
           {properties.map((property) => (
-            <Grid item xs={12} sm={6} md={4} key={property.id}>
-              <PropertyCard
-                property={property}
-                onViewDetails={handleViewDetails}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteClick}
-                actionsType="agent"
-              />
-            </Grid>
+            <PropertyCard
+              key={property.id}
+              property={property}
+              actionsType="agent"
+              onViewDetails={(id) => navigate(`/properties/${id}`)}
+              onEdit={(p) => navigate(`/agent/properties/edit/${p.id}`)}
+              onDelete={setDeleteId}
+              onViewRequests={(id) => navigate(`/agent/property/${id}/requests`)}
+              onViewLeases={(id) => navigate(`/agent/property/${id}/leases`)}
+            />
           ))}
-        </Grid>
+        </Box>
       )}
 
-      {/* Delete Confirmation Modal */}
       <ConfirmationDialog
-        open={deleteDialogOpen}
-        title="Delete Commercial Property?"
-        message="This action will remove the property listing permanently from the public directory. Properties under active leases cannot be deleted."
-        confirmText={deleteLoading ? 'Deleting...' : 'Delete'}
+        open={Boolean(deleteId)}
+        title="Delete Property?"
+        message="This will permanently remove the property listing."
+        confirmText="Delete"
         confirmColor="error"
-        onConfirm={handleConfirmDelete}
-        onClose={() => !deleteLoading && setDeleteDialogOpen(false)}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+        onClose={() => !deleteLoading && setDeleteId(null)}
       />
     </Box>
   );

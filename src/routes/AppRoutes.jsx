@@ -7,17 +7,38 @@ import Login from '../pages/Login/Login';
 import Register from '../pages/Register/Register';
 import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
-import { getDashboardPath } from '../utils/roleRoutes';
 
 import TenantDashboard from '../pages/tenant/TenantDashboard';
+import BrowseProperties from '../pages/tenant/BrowseProperties';
+import PropertyDetails from '../pages/tenant/PropertyDetails';
+import MyRequests from '../pages/tenant/MyRequests';
+import MyLeases from '../pages/tenant/MyLeases';
+
 import AgentDashboard from '../pages/agent/AgentDashboard';
+import MyProperties from '../pages/agent/MyProperties';
+import CreateProperty from '../pages/agent/CreateProperty';
+import EditProperty from '../pages/agent/EditProperty';
+import AgentLeaseRequests from '../pages/agent/AgentLeaseRequests';
+import PropertyRequests from '../pages/agent/PropertyRequests';
+import AgentLeases from '../pages/agent/AgentLeases';
+import PropertyLeases from '../pages/agent/PropertyLeases';
+import CreateLease from '../pages/agent/CreateLease';
+
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import Profile from '../pages/Profile/Profile';
+import LeaseDetails from '../pages/lease/LeaseDetails';
 import ModulePlaceholder from '../pages/shared/ModulePlaceholder';
+
+const dashboardShell = (allowedRoles) => (
+  <ProtectedRoute>
+    <RoleProtectedRoute allowedRoles={allowedRoles}>
+      <DashboardLayout />
+    </RoleProtectedRoute>
+  </ProtectedRoute>
+);
 
 const AppRoutes = () => (
   <Routes>
-    {/* Public */}
     <Route element={<MainLayout />}>
       <Route path="/" element={<Home />} />
     </Route>
@@ -27,79 +48,54 @@ const AppRoutes = () => (
       <Route path="/register" element={<Register />} />
     </Route>
 
-    {/* Profile — any authenticated role */}
-    <Route
-      element={
-        <ProtectedRoute>
-          <DashboardLayout />
-        </ProtectedRoute>
-      }
-    >
+    {/* Property details — any authenticated role */}
+    <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
       <Route path="/profile" element={<Profile />} />
+      <Route path="/properties/:id" element={<PropertyDetails />} />
+      <Route path="/lease/:id" element={<LeaseDetails />} />
+    </Route>
+
+    {/* Tenant + Admin property browsing */}
+    <Route element={dashboardShell(['Tenant', 'Admin'])}>
+      <Route path="/properties" element={<BrowseProperties />} />
     </Route>
 
     {/* Tenant portal */}
-    <Route
-      path="/tenant"
-      element={
-        <ProtectedRoute>
-          <RoleProtectedRoute allowedRoles={['Tenant']}>
-            <DashboardLayout />
-          </RoleProtectedRoute>
-        </ProtectedRoute>
-      }
-    >
+    <Route path="/tenant" element={dashboardShell(['Tenant'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<TenantDashboard />} />
-      <Route path="browse" element={<ModulePlaceholder />} />
-      <Route path="requests" element={<ModulePlaceholder />} />
-      <Route path="leases" element={<ModulePlaceholder />} />
+      <Route path="browse" element={<Navigate to="/properties" replace />} />
+      <Route path="requests" element={<MyRequests />} />
+      <Route path="leases" element={<MyLeases />} />
     </Route>
 
     {/* Agent portal */}
-    <Route
-      path="/agent"
-      element={
-        <ProtectedRoute>
-          <RoleProtectedRoute allowedRoles={['Agent']}>
-            <DashboardLayout />
-          </RoleProtectedRoute>
-        </ProtectedRoute>
-      }
-    >
+    <Route path="/agent" element={dashboardShell(['Agent', 'Admin'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<AgentDashboard />} />
-      <Route path="properties" element={<ModulePlaceholder />} />
-      <Route path="properties/new" element={<ModulePlaceholder />} />
-      <Route path="requests" element={<ModulePlaceholder />} />
-      <Route path="leases" element={<ModulePlaceholder />} />
+      <Route path="properties" element={<MyProperties />} />
+      <Route path="properties/create" element={<CreateProperty />} />
+      <Route path="properties/new" element={<Navigate to="create" replace />} />
+      <Route path="properties/edit/:id" element={<EditProperty />} />
+      <Route path="requests" element={<AgentLeaseRequests />} />
+      <Route path="property/:propertyId/requests" element={<PropertyRequests />} />
+      <Route path="leases" element={<AgentLeases />} />
+      <Route path="property/:propertyId/leases" element={<PropertyLeases />} />
+      <Route path="create-lease/:leaseRequestId" element={<CreateLease />} />
     </Route>
 
     {/* Admin portal */}
-    <Route
-      path="/admin"
-      element={
-        <ProtectedRoute>
-          <RoleProtectedRoute allowedRoles={['Admin']}>
-            <DashboardLayout />
-          </RoleProtectedRoute>
-        </ProtectedRoute>
-      }
-    >
+    <Route path="/admin" element={dashboardShell(['Admin'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<AdminDashboard />} />
       <Route path="users" element={<ModulePlaceholder />} />
-      <Route path="properties" element={<ModulePlaceholder />} />
-      <Route path="requests" element={<ModulePlaceholder />} />
-      <Route path="leases" element={<ModulePlaceholder />} />
+      <Route path="properties" element={<BrowseProperties />} />
+      <Route path="requests" element={<AgentLeaseRequests />} />
+      <Route path="leases" element={<AgentLeases />} />
     </Route>
-
-    {/* Legacy / convenience redirects */}
-    <Route path="/app" element={<Navigate to="/" replace />} />
 
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
 
-export { getDashboardPath };
 export default AppRoutes;

@@ -33,7 +33,7 @@ export const DRAWER_WIDTH_COLLAPSED = 76;
 const NAV_BY_ROLE = {
   tenant: [
     { text: 'Dashboard', icon: DashboardIcon, path: '/tenant/dashboard' },
-    { text: 'Browse Properties', icon: SearchIcon, path: '/tenant/browse' },
+    { text: 'Browse Properties', icon: SearchIcon, path: '/properties' },
     { text: 'My Requests', icon: ListAltIcon, path: '/tenant/requests' },
     { text: 'My Leases', icon: ArticleIcon, path: '/tenant/leases' },
     { text: 'Profile', icon: PersonIcon, path: '/profile' },
@@ -41,7 +41,7 @@ const NAV_BY_ROLE = {
   agent: [
     { text: 'Dashboard', icon: DashboardIcon, path: '/agent/dashboard' },
     { text: 'My Properties', icon: HomeWorkIcon, path: '/agent/properties' },
-    { text: 'Add Property', icon: AddHomeIcon, path: '/agent/properties/new' },
+    { text: 'Add Property', icon: AddHomeIcon, path: '/agent/properties/create' },
     { text: 'Lease Requests', icon: ListAltIcon, path: '/agent/requests' },
     { text: 'Leases', icon: ArticleIcon, path: '/agent/leases' },
     { text: 'Profile', icon: PersonIcon, path: '/profile' },

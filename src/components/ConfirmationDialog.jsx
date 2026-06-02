@@ -1,7 +1,7 @@
-import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { colors } from '../theme/theme';
 
-export const ConfirmationDialog = ({
+const ConfirmationDialog = ({
   open,
   title = 'Are you sure?',
   message = 'This action cannot be undone.',
@@ -10,27 +10,26 @@ export const ConfirmationDialog = ({
   onConfirm,
   onClose,
   confirmColor = 'primary',
-}) => {
-  return (
-    <Dialog open={open} onClose={onClose} aria-labelledby="confirm-dialog-title" maxWidth="xs" fullWidth>
-      <DialogTitle id="confirm-dialog-title" sx={{ fontWeight: 600, color: '#0f172a' }}>
-        {title}
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ color: '#475569', fontSize: '0.95rem' }}>
-          {message}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions sx={{ p: 2, pt: 1 }}>
-        <Button onClick={onClose} color="secondary" variant="text">
-          {cancelText}
-        </Button>
-        <Button onClick={onConfirm} color={confirmColor} variant="contained" autoFocus>
-          {confirmText}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
+  loading = false,
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth="xs"
+    fullWidth
+    PaperProps={{ sx: { bgcolor: colors.card, border: `1px solid ${colors.border}` } }}
+  >
+    <DialogTitle sx={{ fontWeight: 700, color: colors.textPrimary }}>{title}</DialogTitle>
+    <DialogContent>
+      <DialogContentText sx={{ color: colors.textSecondary }}>{message}</DialogContentText>
+    </DialogContent>
+    <DialogActions sx={{ p: 2 }}>
+      <Button onClick={onClose} disabled={loading}>{cancelText}</Button>
+      <Button onClick={onConfirm} color={confirmColor} variant="contained" disabled={loading} autoFocus>
+        {loading ? 'Processing...' : confirmText}
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
 
 export default ConfirmationDialog;

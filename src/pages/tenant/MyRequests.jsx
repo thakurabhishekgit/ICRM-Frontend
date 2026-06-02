@@ -1,92 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { Typography, Box, Chip } from '@mui/material';
-
+import { useState, useEffect } from 'react';
+import { Box, Chip, Alert } from '@mui/material';
 import DataTable from '../../components/DataTable';
-import Loader from '../../components/Loader';
+import PageHeader from '../../components/dashboard/PageHeader';
 import leaseRequestService from '../../api/services/leaseRequestService';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, getLeaseRequestStatusProps } from '../../utils/formatters';
+import { getApiErrorMessage } from '../../utils/apiHelpers';
 
-export const MyRequests = () => {
+const MyRequests = () => {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const data = await leaseRequestService.getMyRequests();
-        setRequests(data || []);
-      } catch (err) {
-        console.error('Failed to retrieve lease requests:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRequests();
+    leaseRequestService
+      .getMyRequests()
+      .then(setRequests)
+      .catch((err) => setError(getApiErrorMessage(err)))
+      .finally(() => setLoading(false));
   }, []);
 
   const columns = [
-    {
-      id: 'propertyName',
-      label: 'Property Title',
-      render: (row) => row.property?.title || 'Unknown Property',
-    },
-    {
-      id: 'location',
-      label: 'Location',
-      render: (row) => row.property?.location || '—',
-    },
-    {
-      id: 'message',
-      label: 'Intro Message',
-      render: (row) => row.message || '—',
-    },
+    { id: 'property', label: 'Property', render: (row) => row.property?.title || '—' },
+    { id: 'agent', label: 'Agent', render: (row) => row.agent?.fullName || '—' },
+    { id: 'message', label: 'Message', render: (row) => row.message || '—' },
     {
       id: 'status',
-      label: 'Request Status',
+      label: 'Status',
       render: (row) => {
-        const statusStr = String(row.status).toLowerCase();
-        let color = 'warning';
-        let label = 'Pending Agent Review';
-        
-        if (statusStr === 'approved' || statusStr === '1') {
-          color = 'success';
-          label = 'Approved';
-        } else if (statusStr === 'rejected' || statusStr === '2') {
-          color = 'error';
-          label = 'Rejected';
-        }
-        return <Chip label={label} color={color} size="small" sx={{ fontWeight: 600 }} />;
+        const { color, label } = getLeaseRequestStatusProps(row.status);
+        return <Chip label={label} color={color} size="small" variant="outlined" />;
       },
     },
-    {
-      id: 'createdAt',
-      label: 'Date Submitted',
-      render: (row) => formatDate(row.createdAt),
-    },
+    { id: 'date', label: 'Requested Date', render: (row) => formatDate(row.requestedAt) },
   ];
 
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-          My Lease Requests
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Track the approval statuses of properties you expressed interest in.
-        </Typography>
-      </Box>
-
-      {loading ? (
-        <Loader message="Fetching requests directory..." />
-      ) : (
-        <DataTable
-          columns={columns}
-          rows={requests}
-          emptyTitle="No submitted lease requests"
-          emptyDescription="Browse commercial listings and select 'Show Interest' or 'Submit Request' to apply."
-        />
-      )}
+      <PageHeader title="My Requests" subtitle="Track your lease request statuses." />
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      <DataTable
+        columns={columns}
+        rows={requests}
+        loading={loading}
+        emptyTitle="No lease requests"
+        emptyDescription="Browse properties and submit a lease request to get started."
+      />
     </Box>
   );
 };

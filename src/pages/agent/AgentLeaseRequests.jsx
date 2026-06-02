@@ -1,157 +1,113 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Box, Chip, Button, Alert } from '@mui/material';
-
+import { Box, Chip, Button, Alert } from '@mui/material';
 import DataTable from '../../components/DataTable';
-import Loader from '../../components/Loader';
+import ConfirmationDialog from '../../components/ConfirmationDialog';
+import PageHeader from '../../components/dashboard/PageHeader';
 import leaseRequestService from '../../api/services/leaseRequestService';
-import { formatDate } from '../../utils/formatters';
+import { useToast } from '../../context/ToastContext';
+import { formatDate, getLeaseRequestStatusProps, isLeaseRequestPending, isLeaseRequestApproved } from '../../utils/formatters';
+import { getApiErrorMessage } from '../../utils/apiHelpers';
 
-export const AgentLeaseRequests = () => {
+const AgentLeaseRequests = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
+  const [dialog, setDialog] = useState({ open: false, type: '', row: null });
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchRequests = async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await leaseRequestService.getAgentRequests();
-      setRequests(data || []);
+      setRequests(data);
     } catch (err) {
-      console.error(err);
-      setError('Failed to fetch assigned tenant requests.');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  useEffect(() => { fetchRequests(); }, []);
 
-  const handleApprove = async (row) => {
-    setError('');
+  const handleConfirm = async () => {
+    const { type, row } = dialog;
+    if (!row) return;
+    setActionLoading(true);
     try {
-      await leaseRequestService.approveRequest(row.id);
-      
-      // Redirect directly to lease drafting page, passing parameters
-      navigate(
-        `/agent/leases/create?requestId=${row.id}&propertyId=${row.propertyId}&tenantId=${row.tenantId || row.tenant?.id}&propertyName=${encodeURIComponent(row.property?.title || '')}&tenantName=${encodeURIComponent(row.tenant?.fullName || row.tenant?.email || '')}`
-      );
+      if (type === 'approve') {
+        await leaseRequestService.approveRequest(row.id);
+        showToast('Lease request approved');
+        setDialog({ open: false, type: '', row: null });
+        navigate(`/agent/create-lease/${row.id}`);
+      } else if (type === 'reject') {
+        await leaseRequestService.rejectRequest(row.id);
+        showToast('Lease request rejected');
+        setDialog({ open: false, type: '', row: null });
+        fetchRequests();
+      }
     } catch (err) {
-      console.error(err);
-      setError('Failed to approve request. Ensure backend connectivity.');
-    }
-  };
-
-  const handleReject = async (id) => {
-    setError('');
-    try {
-      await leaseRequestService.rejectRequest(id);
-      // Refresh list
-      fetchRequests();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to reject request.');
+      setError(getApiErrorMessage(err));
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const columns = [
-    {
-      id: 'propertyName',
-      label: 'Property Title',
-      render: (row) => row.property?.title || 'Unknown Property',
-    },
-    {
-      id: 'tenantName',
-      label: 'Tenant Name',
-      render: (row) => row.tenant?.fullName || row.tenant?.email || '—',
-    },
-    {
-      id: 'message',
-      label: 'Tenant Message',
-      render: (row) => row.message || '—',
-    },
+    { id: 'property', label: 'Property', render: (row) => row.property?.title || '—' },
+    { id: 'tenant', label: 'Tenant', render: (row) => row.tenant?.fullName || '—' },
+    { id: 'message', label: 'Message', render: (row) => row.message || '—' },
     {
       id: 'status',
-      label: 'Request Status',
+      label: 'Status',
       render: (row) => {
-        const status = String(row.status).toLowerCase();
-        let color = 'warning';
-        let label = 'Pending';
-        if (status === 'approved' || status === '1') {
-          color = 'success';
-          label = 'Approved';
-        } else if (status === 'rejected' || status === '2') {
-          color = 'error';
-          label = 'Rejected';
-        }
-        return <Chip label={label} color={color} size="small" sx={{ fontWeight: 600 }} />;
+        const { color, label } = getLeaseRequestStatusProps(row.status);
+        return <Chip label={label} color={color} size="small" variant="outlined" />;
       },
     },
-    {
-      id: 'createdAt',
-      label: 'Date Submitted',
-      render: (row) => formatDate(row.createdAt),
-    },
+    { id: 'date', label: 'Date', render: (row) => formatDate(row.requestedAt) },
     {
       id: 'actions',
-      label: 'Pipeline Actions',
+      label: 'Actions',
       render: (row) => {
-        const isPending = String(row.status).toLowerCase() === 'pending' || String(row.status) === '0';
-        if (!isPending) return <Typography variant="caption" color="textSecondary">Processed</Typography>;
-        return (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              onClick={() => handleApprove(row)}
-            >
-              Approve & Draft Lease
+        if (isLeaseRequestPending(row.status)) {
+          return (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button size="small" variant="contained" color="success" onClick={() => setDialog({ open: true, type: 'approve', row })}>Approve</Button>
+              <Button size="small" variant="outlined" color="error" onClick={() => setDialog({ open: true, type: 'reject', row })}>Reject</Button>
+            </Box>
+          );
+        }
+        if (isLeaseRequestApproved(row.status)) {
+          return (
+            <Button size="small" variant="contained" onClick={() => navigate(`/agent/create-lease/${row.id}`)}>
+              Create Lease
             </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={() => handleReject(row.id)}
-            >
-              Reject
-            </Button>
-          </Box>
-        );
+          );
+        }
+        return '—';
       },
     },
   ];
 
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-          Lease Request Pipeline
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Review introduction messages and approve requests to transition to lease contract drafting.
-        </Typography>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Loader message="Loading requests pipeline..." />
-      ) : (
-        <DataTable
-          columns={columns}
-          rows={requests}
-          emptyTitle="No tenant applications found"
-          emptyDescription="When tenants show interest in your properties, applications will appear here."
-        />
-      )}
+      <PageHeader title="Lease Requests" subtitle="Review and process tenant lease applications." />
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      <DataTable columns={columns} rows={requests} loading={loading} emptyTitle="No requests" emptyDescription="Tenant requests for your properties will appear here." />
+      <ConfirmationDialog
+        open={dialog.open}
+        title={dialog.type === 'approve' ? 'Approve Request?' : 'Reject Request?'}
+        message={dialog.type === 'approve' ? 'Approve this lease request and proceed to create a lease?' : 'Reject this lease request? This cannot be undone.'}
+        confirmText={dialog.type === 'approve' ? 'Approve' : 'Reject'}
+        confirmColor={dialog.type === 'reject' ? 'error' : 'success'}
+        loading={actionLoading}
+        onConfirm={handleConfirm}
+        onClose={() => !actionLoading && setDialog({ open: false, type: '', row: null })}
+      />
     </Box>
   );
 };
