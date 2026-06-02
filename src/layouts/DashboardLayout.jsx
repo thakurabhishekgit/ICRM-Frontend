@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   '/tenant/requests': 'My Requests',
   '/tenant/leases': 'My Leases',
   '/properties': 'Browse Properties',
+  '/settings': 'Settings',
   '/agent/dashboard': 'Agent Dashboard',
   '/agent/properties': 'My Properties',
   '/agent/properties/create': 'Create Property',
@@ -21,8 +22,9 @@ const PAGE_TITLES = {
   '/admin/dashboard': 'Admin Dashboard',
   '/admin/users': 'Users',
   '/admin/properties': 'Properties',
-  '/admin/requests': 'Lease Requests',
+  '/admin/lease-requests': 'Lease Requests',
   '/admin/leases': 'Leases',
+  '/admin/analytics': 'Analytics',
   '/profile': 'Profile',
 };
 

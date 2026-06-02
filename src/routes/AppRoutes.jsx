@@ -25,9 +25,17 @@ import PropertyLeases from '../pages/agent/PropertyLeases';
 import CreateLease from '../pages/agent/CreateLease';
 
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminUsers from '../pages/admin/AdminUsers';
+import AdminUserDetails from '../pages/admin/AdminUserDetails';
+import AdminProperties from '../pages/admin/AdminProperties';
+import AdminPropertyDetails from '../pages/admin/AdminPropertyDetails';
+import AdminLeaseRequests from '../pages/admin/AdminLeaseRequests';
+import AdminLeases from '../pages/admin/AdminLeases';
+import AdminAnalytics from '../pages/admin/AdminAnalytics';
+
 import Profile from '../pages/Profile/Profile';
+import Settings from '../pages/Settings/Settings';
 import LeaseDetails from '../pages/lease/LeaseDetails';
-import ModulePlaceholder from '../pages/shared/ModulePlaceholder';
 
 const dashboardShell = (allowedRoles) => (
   <ProtectedRoute>
@@ -48,19 +56,17 @@ const AppRoutes = () => (
       <Route path="/register" element={<Register />} />
     </Route>
 
-    {/* Property details — any authenticated role */}
     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
       <Route path="/profile" element={<Profile />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="/properties/:id" element={<PropertyDetails />} />
       <Route path="/lease/:id" element={<LeaseDetails />} />
     </Route>
 
-    {/* Tenant + Admin property browsing */}
     <Route element={dashboardShell(['Tenant', 'Admin'])}>
       <Route path="/properties" element={<BrowseProperties />} />
     </Route>
 
-    {/* Tenant portal */}
     <Route path="/tenant" element={dashboardShell(['Tenant'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<TenantDashboard />} />
@@ -69,7 +75,6 @@ const AppRoutes = () => (
       <Route path="leases" element={<MyLeases />} />
     </Route>
 
-    {/* Agent portal */}
     <Route path="/agent" element={dashboardShell(['Agent', 'Admin'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<AgentDashboard />} />
@@ -84,14 +89,17 @@ const AppRoutes = () => (
       <Route path="create-lease/:leaseRequestId" element={<CreateLease />} />
     </Route>
 
-    {/* Admin portal */}
     <Route path="/admin" element={dashboardShell(['Admin'])}>
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<AdminDashboard />} />
-      <Route path="users" element={<ModulePlaceholder />} />
-      <Route path="properties" element={<BrowseProperties />} />
-      <Route path="requests" element={<AgentLeaseRequests />} />
-      <Route path="leases" element={<AgentLeases />} />
+      <Route path="users" element={<AdminUsers />} />
+      <Route path="users/:id" element={<AdminUserDetails />} />
+      <Route path="properties" element={<AdminProperties />} />
+      <Route path="properties/:id" element={<AdminPropertyDetails />} />
+      <Route path="lease-requests" element={<AdminLeaseRequests />} />
+      <Route path="requests" element={<Navigate to="/admin/lease-requests" replace />} />
+      <Route path="leases" element={<AdminLeases />} />
+      <Route path="analytics" element={<AdminAnalytics />} />
     </Route>
 
     <Route path="*" element={<Navigate to="/" replace />} />

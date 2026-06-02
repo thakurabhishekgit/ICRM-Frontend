@@ -1,22 +1,20 @@
-import axiosInstance from '../axiosConfig';
+import axiosInstance from '../axiosInstance';
+import { unwrapResponse } from '../../utils/apiHelpers';
 
 export const userService = {
-  // Get all users in the system (Admin only)
   getAllUsers: async () => {
     const response = await axiosInstance.get('/api/User');
-    return response.data;
+    return unwrapResponse(response) ?? [];
   },
 
-  // Get user details by ID
   getUserById: async (id) => {
     const response = await axiosInstance.get(`/api/User/${id}`);
-    return response.data;
+    return unwrapResponse(response);
   },
 
-  // Update a user's details / role (Admin/Self)
   updateUser: async (id, userData) => {
     const response = await axiosInstance.put(`/api/User/${id}`, userData);
-    return response.data;
+    return unwrapResponse(response);
   },
 };
 

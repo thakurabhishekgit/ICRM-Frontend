@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import useAuth from '../../hooks/useAuth';
 import { colors } from '../../theme/theme';
@@ -105,6 +106,10 @@ const UserProfileDropdown = () => {
             <PersonIcon fontSize="small" sx={{ color: colors.textSecondary }} />
           </ListItemIcon>
           Profile
+        </MenuItem>
+        <MenuItem onClick={() => { setAnchorEl(null); navigate('/settings'); }}>
+          <ListItemIcon><SettingsIcon fontSize="small" sx={{ color: colors.textSecondary }} /></ListItemIcon>
+          Settings
         </MenuItem>
         <Divider sx={{ borderColor: colors.border }} />
         <MenuItem onClick={handleLogout}>

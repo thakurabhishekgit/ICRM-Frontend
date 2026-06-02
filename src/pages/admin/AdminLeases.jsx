@@ -1,171 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { Typography, Box, Chip, Button, Alert } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Chip, Button, Alert } from '@mui/material';
+import PageHeader from '../../components/dashboard/PageHeader';
+import AdminDataTable from '../../components/enterprise/AdminDataTable';
+import { getAllLeases } from '../../services/adminService';
+import { formatCurrency, formatDate, getLeaseStatusProps } from '../../utils/formatters';
+import { getApiErrorMessage } from '../../utils/apiHelpers';
+import { useToast } from '../../context/ToastContext';
 
-import DataTable from '../../components/DataTable';
-import Loader from '../../components/Loader';
-import ConfirmationDialog from '../../components/ConfirmationDialog';
-import leaseService from '../../api/services/leaseService';
-import { formatCurrency, formatDate } from '../../utils/formatters';
-
-export const AdminLeases = () => {
+const AdminLeases = () => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [leases, setLeases] = useState([]);
   const [error, setError] = useState('');
 
-  // Termination dialog
-  const [terminateOpen, setTerminateOpen] = useState(false);
-  const [leaseToTerminate, setLeaseToTerminate] = useState(null);
-  const [termLoading, setTermLoading] = useState(false);
-
-  const fetchLeases = async () => {
-    setLoading(true);
-    try {
-      const data = await leaseService.getAllLeases();
-      setLeases(data || []);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to fetch platform lease logs.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchLeases();
+    getAllLeases()
+      .then(setLeases)
+      .catch((err) => setError(getApiErrorMessage(err)))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleTerminateClick = (id) => {
-    setLeaseToTerminate(id);
-    setTerminateOpen(true);
-  };
-
-  const handleConfirmTerminate = async () => {
-    if (!leaseToTerminate) return;
-    setTermLoading(true);
-    setError('');
-
-    try {
-      await leaseService.terminateLease(leaseToTerminate);
-      setTerminateOpen(false);
-      fetchLeases(); // Refresh list
-    } catch (err) {
-      console.error(err);
-      setError('Failed to terminate lease contract.');
-    } finally {
-      setTermLoading(false);
-      setLeaseToTerminate(null);
-    }
-  };
+  const rows = leases.map((l) => ({
+    id: l.id,
+    property: l.property?.title,
+    tenant: l.tenant?.fullName,
+    agent: l.agent?.fullName,
+    monthlyRent: l.monthlyRent,
+    status: l.status,
+    startDate: l.startDate,
+    endDate: l.endDate,
+  }));
 
   const columns = [
-    {
-      id: 'propertyName',
-      label: 'Property Title',
-      render: (row) => row.property?.title || 'Unknown Property',
-    },
-    {
-      id: 'tenantName',
-      label: 'Tenant Name',
-      render: (row) => row.tenant?.fullName || row.tenant?.email || '—',
-    },
-    {
-      id: 'monthlyRent',
-      label: 'Monthly Rent',
-      render: (row) => formatCurrency(row.monthlyRent),
-    },
-    {
-      id: 'securityDeposit',
-      label: 'Security Deposit',
-      render: (row) => formatCurrency(row.securityDeposit),
-    },
-    {
-      id: 'status',
-      label: 'Status',
-      render: (row) => {
-        const status = String(row.status).toLowerCase();
-        let color = 'warning';
-        let label = 'Draft';
-        if (status === 'active' || status === '1') {
-          color = 'success';
-          label = 'Active';
-        } else if (status === 'expired' || status === '2') {
-          color = 'secondary';
-          label = 'Expired';
-        } else if (status === 'terminated' || status === '3') {
-          color = 'error';
-          label = 'Terminated';
-        }
-        return <Chip label={label} color={color} size="small" sx={{ fontWeight: 600 }} />;
-      },
-    },
-    {
-      id: 'startDate',
-      label: 'Start Date',
-      render: (row) => formatDate(row.startDate),
-    },
-    {
-      id: 'endDate',
-      label: 'End Date',
-      render: (row) => formatDate(row.endDate),
-    },
-    {
-      id: 'actions',
-      label: 'Audit Action',
-      render: (row) => {
-        const status = String(row.status).toLowerCase();
-        const isActive = status === 'active' || status === '1';
-        if (!isActive) return <Typography variant="caption" color="textSecondary">No Actions</Typography>;
-        return (
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            onClick={() => handleTerminateClick(row.id)}
-          >
-            Force Terminate
-          </Button>
-        );
-      },
-    },
+    { id: 'property', label: 'Property', sortable: true },
+    { id: 'tenant', label: 'Tenant' },
+    { id: 'agent', label: 'Agent' },
+    { id: 'monthlyRent', label: 'Monthly Rent', render: (r) => formatCurrency(r.monthlyRent) },
+    { id: 'status', label: 'Status', render: (r) => { const s = getLeaseStatusProps(r.status); return <Chip label={s.label} color={s.color} size="small" variant="outlined" />; } },
+    { id: 'startDate', label: 'Start', render: (r) => formatDate(r.startDate) },
+    { id: 'endDate', label: 'End', render: (r) => formatDate(r.endDate) },
+    { id: 'actions', label: '', render: (r) => <Button size="small" onClick={() => navigate(`/lease/${r.id}`)}>View</Button> },
   ];
 
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-          Lease Contracts Audit Log
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Review financial parameters, lock status, and execute force terminations on active leases.
-        </Typography>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Loader message="Loading contract audits..." />
-      ) : (
-        <DataTable
-          columns={columns}
-          rows={leases}
-          emptyTitle="No platform lease records"
-          emptyDescription="Active lease contracts drafted by agents will display here."
-        />
-      )}
-
-      {/* Force Terminate Dialog */}
-      <ConfirmationDialog
-        open={terminateOpen}
-        title="Force Terminate Lease Agreement?"
-        message="Warning: Force termination is a critical administrative override. This will update the contract status to Terminated immediately."
-        confirmText={termLoading ? 'Terminating...' : 'Force Terminate'}
-        confirmColor="error"
-        onConfirm={handleConfirmTerminate}
-        onClose={() => !termLoading && setTerminateOpen(false)}
+      <PageHeader title="Lease Management" subtitle="All lease contracts across the platform." />
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      <AdminDataTable
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        searchKeys={['property', 'tenant', 'agent']}
+        statusKey="status"
+        searchPlaceholder="Search leases..."
+        emptyTitle="No leases found"
+        onExport={() => showToast('Export coming soon', 'info')}
       />
     </Box>
   );

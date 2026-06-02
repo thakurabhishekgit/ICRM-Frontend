@@ -1,156 +1,131 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-svg';
-import { Typography, Box, Chip, Button, Alert } from '@mui/material';
-import { useNavigate as useNav } from 'react-router-dom';
-
-import DataTable from '../../components/DataTable';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box, Alert, ToggleButton, ToggleButtonGroup, TextField, FormControl, InputLabel, Select, MenuItem, Button,
+} from '@mui/material';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import TableRowsIcon from '@mui/icons-material/TableRows';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import PageHeader from '../../components/dashboard/PageHeader';
+import PropertyCard from '../../components/PropertyCard';
+import AdminDataTable from '../../components/enterprise/AdminDataTable';
+import FilterDrawer from '../../components/enterprise/FilterDrawer';
 import Loader from '../../components/Loader';
-import ConfirmationDialog from '../../components/ConfirmationDialog';
 import propertyService from '../../api/services/propertyService';
-import { formatCurrency, getPropertyTypeName, getOccupancyRate } from '../../utils/formatters';
+import { formatCurrency, getPropertyTypeName, PROPERTY_TYPE_OPTIONS } from '../../utils/formatters';
+import { getApiErrorMessage } from '../../utils/apiHelpers';
+import ConfirmationDialog from '../../components/ConfirmationDialog';
+import { useToast } from '../../context/ToastContext';
 
-export const AdminProperties = () => {
-  const navigate = useNav();
+const AdminProperties = () => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState([]);
   const [error, setError] = useState('');
-
-  // Deletion Dialog State
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const fetchProperties = async () => {
-    setLoading(true);
-    try {
-      const data = await propertyService.getAllProperties();
-      setProperties(data || []);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to fetch platform property records.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [view, setView] = useState('grid');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [filters, setFilters] = useState({ location: '', propertyType: 'all', agent: '', minPrice: '', maxPrice: '' });
 
   useEffect(() => {
-    fetchProperties();
+    propertyService.getAllProperties()
+      .then(setProperties)
+      .catch((err) => setError(getApiErrorMessage(err)))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleDeleteClick = (id) => {
-    setSelectedPropertyId(id);
-    setDeleteDialogOpen(true);
-  };
+  const agents = useMemo(() => [...new Set(properties.map((p) => p.agent?.fullName).filter(Boolean))], [properties]);
 
-  const handleConfirmDelete = async () => {
-    if (!selectedPropertyId) return;
-    setDeleteLoading(true);
-    setError('');
+  const filtered = useMemo(() => {
+    return properties.filter((p) => {
+      if (filters.location && !p.location?.toLowerCase().includes(filters.location.toLowerCase())) return false;
+      if (filters.propertyType !== 'all' && String(p.propertyType) !== filters.propertyType && getPropertyTypeName(p.propertyType) !== filters.propertyType) return false;
+      if (filters.agent && p.agent?.fullName !== filters.agent) return false;
+      if (filters.minPrice && p.price < parseFloat(filters.minPrice)) return false;
+      if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) return false;
+      return true;
+    });
+  }, [properties, filters]);
 
+  const handleDelete = async () => {
     try {
-      await propertyService.deleteProperty(selectedPropertyId);
-      setProperties(properties.filter(p => p.id !== selectedPropertyId));
-      setDeleteDialogOpen(false);
+      await propertyService.deleteProperty(deleteId);
+      showToast('Property deleted');
+      setProperties((prev) => prev.filter((p) => p.id !== deleteId));
+      setDeleteId(null);
     } catch (err) {
-      console.error(err);
-      setError('Failed to remove property listing from directory.');
-    } finally {
-      setDeleteLoading(false);
-      setSelectedPropertyId(null);
+      showToast(getApiErrorMessage(err), 'error');
     }
   };
 
-  const columns = [
-    {
-      id: 'title',
-      label: 'Title',
-      render: (row) => (
-        <strong style={{ color: '#1e293b', cursor: 'pointer' }} onClick={() => navigate(`/tenant/properties/${row.id}`)}>
-          {row.title}
-        </strong>
-      ),
-    },
-    {
-      id: 'propertyType',
-      label: 'Type',
-      render: (row) => getPropertyTypeName(row.propertyType),
-    },
-    {
-      id: 'location',
-      label: 'Location',
-    },
-    {
-      id: 'price',
-      label: 'Monthly Rent',
-      render: (row) => formatCurrency(row.price),
-    },
-    {
-      id: 'occupancy',
-      label: 'Occupancy Level',
-      render: (row) => {
-        const occ = getOccupancyRate(row.occupiedUnits, row.totalUnits);
-        return occ.label;
-      },
-    },
-    {
-      id: 'roi',
-      label: 'Annual ROI',
-      render: (row) => (row.roi ? `${row.roi}%` : '—'),
-    },
-    {
-      id: 'actions',
-      label: 'Audit Actions',
-      render: (row) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" variant="outlined" onClick={() => navigate(`/tenant/properties/${row.id}`)}>
-            Inspect
-          </Button>
-          <Button size="small" variant="outlined" color="error" onClick={() => handleDeleteClick(row.id)}>
-            Remove
-          </Button>
-        </Box>
-      ),
-    },
+  const tableColumns = [
+    { id: 'title', label: 'Property', sortable: true },
+    { id: 'location', label: 'Location' },
+    { id: 'propertyType', label: 'Type', render: (r) => getPropertyTypeName(r.propertyType) },
+    { id: 'agent', label: 'Agent', render: (r) => r.agent?.fullName || '—' },
+    { id: 'price', label: 'Price', render: (r) => formatCurrency(r.price), sortable: true },
+    { id: 'actions', label: 'Actions', render: (r) => (
+      <Button size="small" onClick={() => navigate(`/admin/properties/${r.id}`)}>View</Button>
+    )},
   ];
+
+  const tableRows = filtered.map((p) => ({ ...p, agent: p.agent?.fullName }));
 
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-          Platform Properties Audit
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Review listed properties across all agents, audit financial metrics, or delete unauthorized listings.
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+        <PageHeader title="Property Management" subtitle="All commercial properties across the platform." />
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" startIcon={<FilterListIcon />} onClick={() => setFilterOpen(true)}>Filters</Button>
+          <ToggleButtonGroup size="small" value={view} exclusive onChange={(_, v) => v && setView(v)}>
+            <ToggleButton value="grid"><ViewModuleIcon fontSize="small" /></ToggleButton>
+            <ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
       {loading ? (
-        <Loader message="Loading property databases..." />
+        <Loader message="Loading properties..." />
+      ) : view === 'grid' ? (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
+          {filtered.map((p) => (
+            <PropertyCard
+              key={p.id}
+              property={p}
+              actionsType="agent"
+              onViewDetails={(id) => navigate(`/admin/properties/${id}`)}
+              onEdit={(prop) => navigate(`/agent/properties/edit/${prop.id}`)}
+              onDelete={setDeleteId}
+            />
+          ))}
+        </Box>
       ) : (
-        <DataTable
-          columns={columns}
-          rows={properties}
-          emptyTitle="No platform properties listed"
-          emptyDescription="Properties added by agents will display in this audit log."
-        />
+        <AdminDataTable columns={tableColumns} rows={tableRows} searchKeys={['title', 'location']} searchPlaceholder="Search properties..." />
       )}
 
-      {/* Delete Confirmation */}
-      <ConfirmationDialog
-        open={deleteDialogOpen}
-        title="Remove Listing Administratively?"
-        message="This action will delete the property listing from the platform directories. Leased properties cannot be removed."
-        confirmText={deleteLoading ? 'Removing...' : 'Remove'}
-        confirmColor="error"
-        onConfirm={handleConfirmDelete}
-        onClose={() => !deleteLoading && setDeleteDialogOpen(false)}
-      />
+      <FilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} filters={filters} onChange={setFilters} onReset={() => setFilters({ location: '', propertyType: 'all', agent: '', minPrice: '', maxPrice: '' })}>
+        <TextField fullWidth size="small" label="Location" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })} sx={{ mb: 2 }} />
+        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel>Property Type</InputLabel>
+          <Select label="Property Type" value={filters.propertyType} onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}>
+            <MenuItem value="all">All</MenuItem>
+            {PROPERTY_TYPE_OPTIONS.map((o) => <MenuItem key={o.value} value={String(o.value)}>{o.label}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel>Agent</InputLabel>
+          <Select label="Agent" value={filters.agent} onChange={(e) => setFilters({ ...filters, agent: e.target.value })}>
+            <MenuItem value="">All</MenuItem>
+            {agents.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <TextField fullWidth size="small" type="number" label="Min Price" value={filters.minPrice} onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} sx={{ mb: 2 }} />
+        <TextField fullWidth size="small" type="number" label="Max Price" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} />
+      </FilterDrawer>
+
+      <ConfirmationDialog open={Boolean(deleteId)} title="Delete Property?" message="Permanently remove this property listing?" confirmColor="error" onConfirm={handleDelete} onClose={() => setDeleteId(null)} />
     </Box>
   );
 };

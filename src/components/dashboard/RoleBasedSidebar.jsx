@@ -21,6 +21,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AddHomeIcon from '@mui/icons-material/AddHome';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import PeopleIcon from '@mui/icons-material/People';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import useAuth from '../../hooks/useAuth';
@@ -50,8 +51,9 @@ const NAV_BY_ROLE = {
     { text: 'Dashboard', icon: DashboardIcon, path: '/admin/dashboard' },
     { text: 'Users', icon: PeopleIcon, path: '/admin/users' },
     { text: 'Properties', icon: HomeWorkIcon, path: '/admin/properties' },
-    { text: 'Lease Requests', icon: ListAltIcon, path: '/admin/requests' },
+    { text: 'Lease Requests', icon: ListAltIcon, path: '/admin/lease-requests' },
     { text: 'Leases', icon: ArticleIcon, path: '/admin/leases' },
+    { text: 'Analytics', icon: BarChartIcon, path: '/admin/analytics' },
     { text: 'Profile', icon: PersonIcon, path: '/profile' },
   ],
 };
