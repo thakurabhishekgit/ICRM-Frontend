@@ -1,6 +1,8 @@
 /**
  * Formats a number to currency USD representation.
  */
+import { getPropertyThumbnailUrl, isValidPropertyThumbnail } from './propertyImages';
+
 export const formatCurrency = (amount) => {
   if (amount === undefined || amount === null) return '$0.00';
   const val = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -41,15 +43,72 @@ export const getPropertyTypeName = (type) => {
   return PROPERTY_TYPE_LABELS[type] ?? PROPERTY_TYPE_LABELS[String(type)] ?? 'Commercial Property';
 };
 
+/** Normalize API/filter values to enum number (1–6). */
+export const normalizePropertyType = (type) => {
+  if (type === undefined || type === null || type === '') return null;
+  if (typeof type === 'number' && !Number.isNaN(type)) return type;
+
+  const str = String(type).trim();
+  if (/^\d+$/.test(str)) return parseInt(str, 10);
+
+  const byKey = {
+    office: 1,
+    retail: 2,
+    warehouse: 3,
+    coworking: 4,
+    industrial: 5,
+    mixeduse: 6,
+  };
+  const compact = str.toLowerCase().replace(/\s+/g, '');
+  if (byKey[compact] !== undefined) return byKey[compact];
+
+  const byLabel = PROPERTY_TYPE_OPTIONS.find(
+    (o) => o.label.toLowerCase() === str.toLowerCase()
+  );
+  return byLabel?.value ?? null;
+};
+
+/** Match property against filter (supports API strings like "Office" and numeric filters). */
+export const matchesPropertyTypeFilter = (propertyType, filterValue) => {
+  if (!filterValue || filterValue === 'all') return true;
+  const normalizedProperty = normalizePropertyType(propertyType);
+  const normalizedFilter = normalizePropertyType(filterValue);
+  if (normalizedProperty !== null && normalizedFilter !== null) {
+    return normalizedProperty === normalizedFilter;
+  }
+  return (
+    String(propertyType).toLowerCase() === String(filterValue).toLowerCase()
+    || getPropertyTypeName(propertyType).toLowerCase() === String(filterValue).toLowerCase()
+  );
+};
+
+export const APP_TIMEZONE = 'Asia/Kolkata';
+export const APP_LOCALE = 'en-IN';
+
+/** Parse API timestamps — .NET often returns UTC without a trailing Z. */
+export const parseApiDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const str = String(value).trim();
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str) && !/[zZ]|[+-]\d{2}:\d{2}$/.test(str)) {
+    const utc = new Date(`${str}Z`);
+    return Number.isNaN(utc.getTime()) ? null : utc;
+  }
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return 'N/A';
-    return date.toLocaleDateString('en-US', {
+    const date = parseApiDate(dateString);
+    if (!date || date.getFullYear() <= 2000) return 'N/A';
+    return date.toLocaleDateString(APP_LOCALE, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: APP_TIMEZONE,
     });
   } catch {
     return 'N/A';
@@ -102,6 +161,52 @@ export const isLeaseActive = (status) => {
   return s === 'active' || s === '2';
 };
 
+export const normalizeLeaseStatus = (status) => {
+  const s = String(status ?? '').toLowerCase();
+  if (s === 'active' || s === '2') return 'active';
+  if (s === 'expired' || s === '3') return 'expired';
+  if (s === 'terminated' || s === '4') return 'terminated';
+  return 'pending';
+};
+
+export const normalizeRequestStatus = (status) => {
+  const s = String(status ?? '').toLowerCase();
+  if (s === 'approved' || s === '2') return 'approved';
+  if (s === 'rejected' || s === '3') return 'rejected';
+  return 'pending';
+};
+
+const isValidTimestamp = (value) => {
+  const date = parseApiDate(value);
+  return Boolean(date && date.getFullYear() > 2000);
+};
+
+export const formatDateTime = (dateString) => {
+  const date = parseApiDate(dateString);
+  if (!date || date.getFullYear() <= 2000) return 'N/A';
+  return date.toLocaleString(APP_LOCALE, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: APP_TIMEZONE,
+    timeZoneName: 'short',
+  });
+};
+
+export const formatRelativeTime = (dateString) => {
+  const date = parseApiDate(dateString);
+  if (!date || date.getFullYear() <= 2000) return '';
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
+  return formatDate(dateString);
+};
+
 export const getRoleLabel = (role) => {
   if (role === undefined || role === null) return 'Tenant';
   const roleStr = String(role).trim();
@@ -123,5 +228,7 @@ export const buildPropertyPayload = (formData) => ({
   monthlyRevenue: parseFloat(formData.monthlyRevenue) || 0,
   roi: parseFloat(formData.roi) || 0,
   amenities: formData.amenities.trim(),
-  thumbnailUrl: formData.thumbnailUrl.trim(),
+  thumbnailUrl: isValidPropertyThumbnail(formData.thumbnailUrl)
+    ? formData.thumbnailUrl.trim()
+    : getPropertyThumbnailUrl(null, formData.title?.trim() || 'property'),
 });

@@ -9,10 +9,11 @@ import UserProfileCard from '../../components/enterprise/UserProfileCard';
 import ActivityTimeline from '../../components/enterprise/ActivityTimeline';
 import Loader from '../../components/Loader';
 import userService from '../../api/services/userService';
-import { getUserActivityStats } from '../../services/adminService';
+import propertyService from '../../api/services/propertyService';
+import { getUserActivityStats, getAllLeaseRequests, getAllLeases } from '../../services/adminService';
+import { buildUserActivity } from '../../services/activityService';
 import { useToast } from '../../context/ToastContext';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
-import { MOCK_ACTIVITY } from '../../data/mockActivity';
 import { colors } from '../../theme/theme';
 
 const AdminUserDetails = () => {
@@ -25,17 +26,24 @@ const AdminUserDetails = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({});
+  const [activity, setActivity] = useState([]);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    userService.getUserById(id)
-      .then(async (u) => {
+    Promise.all([
+      userService.getUserById(id),
+      getAllLeaseRequests(),
+      getAllLeases(),
+      propertyService.getAllProperties(),
+    ])
+      .then(async ([u, requests, leases, properties]) => {
         setUser(u);
         setForm({ fullName: u.fullName, email: u.email, phoneNumber: u.phoneNumber, role: u.role, createdAt: u.createdAt, id: u.id });
-        const activity = await getUserActivityStats(u);
-        setStats(activity);
+        const activityStats = await getUserActivityStats(u);
+        setStats(activityStats);
+        setActivity(buildUserActivity(u, { requests, leases, properties }));
       })
       .catch((err) => setError(getApiErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -96,7 +104,7 @@ const AdminUserDetails = () => {
         <Box sx={{ mb: 3 }}><UserProfileCard user={user} stats={statLabels} /></Box>
       )}
 
-      <ActivityTimeline items={MOCK_ACTIVITY.slice(0, 4)} title="User Activity (Mock)" />
+      <ActivityTimeline items={activity} title="User Activity" emptyMessage="No activity recorded for this user yet." />
     </Box>
   );
 };

@@ -2,6 +2,7 @@ import propertyService from '../api/services/propertyService';
 import userService from '../api/services/userService';
 import leaseRequestService from '../api/services/leaseRequestService';
 import leaseService from '../api/services/leaseService';
+import { normalizeLeaseStatus, normalizeRequestStatus } from '../utils/formatters';
 
 const dedupeById = (items) => {
   const map = new Map();
@@ -11,30 +12,34 @@ const dedupeById = (items) => {
   return [...map.values()];
 };
 
-/** Aggregate lease requests across all properties (best available with current API surface). */
+/** All lease requests — admin/agent endpoints return full data for Admin role. */
 export const getAllLeaseRequests = async () => {
-  const properties = await propertyService.getAllProperties();
-  const batches = await Promise.all(
-    properties.map((p) =>
-      leaseRequestService.getRequestsByProperty(p.id).catch(() => [])
-    )
-  );
-  const merged = dedupeById(batches.flat());
-  if (merged.length > 0) return merged;
-  return leaseRequestService.getAgentRequests().catch(() => []);
+  try {
+    return await leaseRequestService.getAgentRequests();
+  } catch {
+    const properties = await propertyService.getAllProperties();
+    const batches = await Promise.all(
+      properties.map((p) =>
+        leaseRequestService.getRequestsByProperty(p.id).catch(() => [])
+      )
+    );
+    return dedupeById(batches.flat());
+  }
 };
 
-/** Aggregate leases across all properties. */
+/** All leases — admin/agent endpoints return full data for Admin role. */
 export const getAllLeases = async () => {
-  const properties = await propertyService.getAllProperties();
-  const batches = await Promise.all(
-    properties.map((p) =>
-      leaseService.getLeasesByProperty(p.id).catch(() => [])
-    )
-  );
-  const merged = dedupeById(batches.flat());
-  if (merged.length > 0) return merged;
-  return leaseService.getAgentLeases().catch(() => []);
+  try {
+    return await leaseService.getAgentLeases();
+  } catch {
+    const properties = await propertyService.getAllProperties();
+    const batches = await Promise.all(
+      properties.map((p) =>
+        leaseService.getLeasesByProperty(p.id).catch(() => [])
+      )
+    );
+    return dedupeById(batches.flat());
+  }
 };
 
 export const getAdminDashboardStats = async () => {
@@ -49,10 +54,10 @@ export const getAdminDashboardStats = async () => {
     users.filter((u) => String(u.role).toLowerCase() === role.toLowerCase()).length;
 
   const countRequestStatus = (status) =>
-    requests.filter((r) => String(r.status).toLowerCase() === status.toLowerCase()).length;
+    requests.filter((r) => normalizeRequestStatus(r.status) === status).length;
 
   const countLeaseStatus = (status) =>
-    leases.filter((l) => String(l.status).toLowerCase() === status.toLowerCase()).length;
+    leases.filter((l) => normalizeLeaseStatus(l.status) === status).length;
 
   return {
     totalUsers: users.length,
@@ -60,12 +65,14 @@ export const getAdminDashboardStats = async () => {
     totalAgents: countRole('Agent'),
     totalProperties: properties.length,
     totalLeaseRequests: requests.length,
-    approvedRequests: countRequestStatus('Approved'),
-    rejectedRequests: countRequestStatus('Rejected'),
-    pendingRequests: countRequestStatus('Pending'),
+    approvedRequests: countRequestStatus('approved'),
+    rejectedRequests: countRequestStatus('rejected'),
+    pendingRequests: countRequestStatus('pending'),
     totalLeases: leases.length,
-    activeLeases: countLeaseStatus('Active'),
-    expiredLeases: countLeaseStatus('Expired'),
+    pendingLeases: countLeaseStatus('pending'),
+    activeLeases: countLeaseStatus('active'),
+    expiredLeases: countLeaseStatus('expired'),
+    terminatedLeases: countLeaseStatus('terminated'),
     users,
     properties,
     requests,
@@ -86,7 +93,7 @@ export const getUserActivityStats = async (user) => {
     const tenantLeases = leases.filter((l) => l.tenant?.id === user.id);
     return {
       totalRequests: tenantRequests.length,
-      activeLeases: tenantLeases.filter((l) => String(l.status).toLowerCase() === 'active').length,
+      activeLeases: tenantLeases.filter((l) => normalizeLeaseStatus(l.status) === 'active').length,
     };
   }
 
@@ -97,7 +104,7 @@ export const getUserActivityStats = async (user) => {
     return {
       totalProperties: agentProperties.length,
       totalLeaseRequests: agentRequests.length,
-      activeLeases: agentLeases.filter((l) => String(l.status).toLowerCase() === 'active').length,
+      activeLeases: agentLeases.filter((l) => normalizeLeaseStatus(l.status) === 'active').length,
     };
   }
 

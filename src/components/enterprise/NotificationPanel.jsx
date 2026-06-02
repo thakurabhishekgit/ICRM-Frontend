@@ -40,6 +40,9 @@ const NotificationPanel = () => {
         </Box>
         <Divider sx={{ borderColor: colors.border }} />
         <List dense sx={{ py: 0 }}>
+          {notifications.length === 0 && (
+            <Typography variant="body2" sx={{ p: 2, color: colors.textSecondary }}>No notifications yet.</Typography>
+          )}
           {notifications.map((n) => (
             <ListItemButton key={n.id} onClick={() => markRead(n.id)} sx={{ bgcolor: n.read ? 'transparent' : alpha(colors.primary, 0.06) }}>
               <ListItemText
@@ -47,7 +50,9 @@ const NotificationPanel = () => {
                 secondary={
                   <>
                     <Typography variant="caption" sx={{ display: 'block', color: colors.textSecondary }}>{n.message}</Typography>
-                    <Typography variant="caption" sx={{ color: colors.textSecondary }}>{n.time}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+                      {n.time}{n.dateTime ? ` · ${n.dateTime}` : ''}
+                    </Typography>
                   </>
                 }
               />

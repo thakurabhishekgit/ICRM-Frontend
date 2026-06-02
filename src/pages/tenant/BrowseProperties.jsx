@@ -11,7 +11,7 @@ import propertyService from '../../api/services/propertyService';
 import leaseRequestService from '../../api/services/leaseRequestService';
 import useAuth from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
-import { getApiErrorMessage } from '../../utils/apiHelpers';
+import { matchesPropertyTypeFilter } from '../../utils/formatters';
 import { normalizeRole } from '../../utils/roleRoutes';
 
 const PropertyGridSkeleton = () => (
@@ -60,7 +60,7 @@ const BrowseProperties = () => {
       );
     }
     if (filters.propertyType !== 'all') {
-      result = result.filter((p) => String(p.propertyType) === String(filters.propertyType));
+      result = result.filter((p) => matchesPropertyTypeFilter(p.propertyType, filters.propertyType));
     }
     if (filters.maxPrice) {
       result = result.filter((p) => p.price <= parseFloat(filters.maxPrice));

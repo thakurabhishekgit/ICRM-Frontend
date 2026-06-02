@@ -8,13 +8,31 @@ import {
   Select,
   MenuItem,
   InputAdornment,
+  Typography,
 } from '@mui/material';
 import { PROPERTY_TYPE_OPTIONS } from '../../utils/formatters';
+import PropertyThumbnail from './PropertyThumbnail';
 import { colors } from '../../theme/theme';
 
-const PropertyForm = ({ formData, onChange, onTypeChange, loading, onSubmit, submitLabel = 'Save Property' }) => (
+const PropertyForm = ({ formData, onChange, onTypeChange, loading, onSubmit, submitLabel = 'Save Property' }) => {
+  const previewSeed = formData.title?.trim() || 'new-property';
+
+  return (
   <Box component="form" onSubmit={onSubmit} noValidate>
     <Grid container spacing={3}>
+      <Grid size={{ xs: 12 }}>
+        <Box sx={{ mb: 1, borderRadius: 2, overflow: 'hidden', border: `1px solid ${colors.border}`, maxWidth: 480 }}>
+          <PropertyThumbnail
+            thumbnailUrl={formData.thumbnailUrl}
+            seed={previewSeed}
+            alt="Property preview"
+            height={220}
+          />
+        </Box>
+        <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+          Preview — a default building photo is used when no valid thumbnail URL is provided.
+        </Typography>
+      </Grid>
       <Grid size={{ xs: 12 }}>
         <TextField required fullWidth label="Title" name="title" value={formData.title} onChange={onChange} disabled={loading} />
       </Grid>
@@ -61,14 +79,14 @@ const PropertyForm = ({ formData, onChange, onTypeChange, loading, onSubmit, sub
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField
-          required
           fullWidth
-          label="Thumbnail URL"
+          label="Thumbnail URL (optional)"
           name="thumbnailUrl"
           value={formData.thumbnailUrl}
           onChange={onChange}
           disabled={loading}
-          placeholder="https://..."
+          placeholder="Leave empty for auto building photo"
+          helperText="If empty or invalid, a default building photo is shown in the app."
         />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
@@ -96,6 +114,7 @@ const PropertyForm = ({ formData, onChange, onTypeChange, loading, onSubmit, sub
       </Grid>
     </Grid>
   </Box>
-);
+  );
+};
 
 export default PropertyForm;

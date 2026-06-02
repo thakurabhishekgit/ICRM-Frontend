@@ -1,11 +1,10 @@
-import { Card, CardMedia, CardContent, CardActions, Typography, Box, Chip, Button, LinearProgress, alpha } from '@mui/material';
+import { Card, CardContent, CardActions, Typography, Box, Chip, Button, LinearProgress, alpha } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import { formatCurrency, getPropertyTypeName, getOccupancyRate } from '../utils/formatters';
+import PropertyThumbnail from './properties/PropertyThumbnail';
 import { colors } from '../theme/theme';
-
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80';
 
 const PropertyCard = ({
   property,
@@ -31,13 +30,12 @@ const PropertyCard = ({
     agent,
   } = property;
 
-  const imageUrl = thumbnailUrl?.startsWith('http') ? thumbnailUrl : DEFAULT_IMAGE;
   const occupancy = getOccupancyRate(occupiedUnits, totalUnits);
 
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: colors.card, border: `1px solid ${colors.border}` }}>
       <Box sx={{ position: 'relative' }}>
-        <CardMedia component="img" height="200" image={imageUrl} alt={title} sx={{ objectFit: 'cover' }} />
+        <PropertyThumbnail thumbnailUrl={thumbnailUrl} seed={id || title} alt={title} height={200} />
         <Chip
           label={getPropertyTypeName(propertyType)}
           size="small"

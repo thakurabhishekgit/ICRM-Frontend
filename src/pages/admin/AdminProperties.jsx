@@ -12,7 +12,7 @@ import AdminDataTable from '../../components/enterprise/AdminDataTable';
 import FilterDrawer from '../../components/enterprise/FilterDrawer';
 import Loader from '../../components/Loader';
 import propertyService from '../../api/services/propertyService';
-import { formatCurrency, getPropertyTypeName, PROPERTY_TYPE_OPTIONS } from '../../utils/formatters';
+import { formatCurrency, getPropertyTypeName, PROPERTY_TYPE_OPTIONS, matchesPropertyTypeFilter } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 import { useToast } from '../../context/ToastContext';
@@ -40,7 +40,7 @@ const AdminProperties = () => {
   const filtered = useMemo(() => {
     return properties.filter((p) => {
       if (filters.location && !p.location?.toLowerCase().includes(filters.location.toLowerCase())) return false;
-      if (filters.propertyType !== 'all' && String(p.propertyType) !== filters.propertyType && getPropertyTypeName(p.propertyType) !== filters.propertyType) return false;
+      if (filters.propertyType !== 'all' && !matchesPropertyTypeFilter(p.propertyType, filters.propertyType)) return false;
       if (filters.agent && p.agent?.fullName !== filters.agent) return false;
       if (filters.minPrice && p.price < parseFloat(filters.minPrice)) return false;
       if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) return false;

@@ -9,6 +9,7 @@ import leaseRequestService from '../../api/services/leaseRequestService';
 import leaseService from '../../api/services/leaseService';
 import { formatCurrency, getPropertyTypeName, getOccupancyRate } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
+import PropertyThumbnail from '../../components/properties/PropertyThumbnail';
 import { colors } from '../../theme/theme';
 
 const AdminPropertyDetails = () => {
@@ -44,6 +45,10 @@ const AdminPropertyDetails = () => {
     <Box>
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin/properties')} sx={{ mb: 2 }}>Back</Button>
       <PageHeader title={property.title} subtitle={property.location} />
+
+      <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
+        <PropertyThumbnail thumbnailUrl={property.thumbnailUrl} seed={property.id || property.title} alt={property.title} maxHeight={320} />
+      </Paper>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 8 }}>

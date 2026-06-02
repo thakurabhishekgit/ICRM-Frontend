@@ -17,7 +17,7 @@ import {
   RevenueTrendChart, LeaseStatusChart, OccupancyChart, UserDistributionChart,
 } from '../../components/enterprise/AdminCharts';
 import { getAdminDashboardStats } from '../../services/adminService';
-import { MOCK_ACTIVITY } from '../../data/mockActivity';
+import { buildPlatformActivity } from '../../services/activityService';
 import { colors } from '../../theme/theme';
 
 const MOCK_REVENUE = [
@@ -32,11 +32,15 @@ const MOCK_REVENUE = [
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [activity, setActivity] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     getAdminDashboardStats()
-      .then(setStats)
+      .then((data) => {
+        setStats(data);
+        setActivity(buildPlatformActivity(data));
+      })
       .catch(() => setError('Failed to load dashboard metrics from API.'))
       .finally(() => setLoading(false));
   }, []);
@@ -45,9 +49,10 @@ const AdminDashboard = () => {
   if (!stats) return <Alert severity="error">{error}</Alert>;
 
   const leaseStatusData = [
-    { name: 'Pending', value: stats.totalLeases - stats.activeLeases - stats.expiredLeases || 1 },
+    { name: 'Pending', value: stats.pendingLeases || 0 },
     { name: 'Active', value: stats.activeLeases || 0 },
     { name: 'Expired', value: stats.expiredLeases || 0 },
+    { name: 'Terminated', value: stats.terminatedLeases || 0 },
   ].filter((d) => d.value > 0);
 
   const occupancyData = stats.properties.slice(0, 5).map((p) => ({
@@ -113,7 +118,7 @@ const AdminDashboard = () => {
         </Paper>
       </Box>
 
-      <ActivityTimeline items={MOCK_ACTIVITY} />
+      <ActivityTimeline items={activity} emptyMessage="Platform activity will appear here as users, properties, and leases are created." />
     </>
   );
 };

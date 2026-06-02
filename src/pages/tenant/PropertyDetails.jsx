@@ -14,9 +14,8 @@ import { useToast } from '../../context/ToastContext';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
 import { formatCurrency, getPropertyTypeName, getOccupancyRate } from '../../utils/formatters';
 import { normalizeRole } from '../../utils/roleRoutes';
+import PropertyThumbnail from '../../components/properties/PropertyThumbnail';
 import { colors } from '../../theme/theme';
-
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80';
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -75,7 +74,6 @@ const PropertyDetails = () => {
   }
 
   const occupancy = getOccupancyRate(property.occupiedUnits, property.totalUnits);
-  const imageUrl = property.thumbnailUrl?.startsWith('http') ? property.thumbnailUrl : DEFAULT_IMAGE;
 
   return (
     <Box>
@@ -84,7 +82,7 @@ const PropertyDetails = () => {
       </Button>
 
       <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', bgcolor: colors.card, border: `1px solid ${colors.border}` }}>
-        <Box component="img" src={imageUrl} alt={property.title} sx={{ width: '100%', maxHeight: 400, objectFit: 'cover' }} />
+        <PropertyThumbnail thumbnailUrl={property.thumbnailUrl} seed={property.id || property.title} alt={property.title} maxHeight={400} />
         <Box sx={{ p: { xs: 3, md: 4 } }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
             <Chip label={getPropertyTypeName(property.propertyType)} color="primary" size="small" />

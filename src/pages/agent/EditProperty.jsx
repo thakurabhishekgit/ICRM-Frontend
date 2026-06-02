@@ -7,7 +7,7 @@ import PageHeader from '../../components/dashboard/PageHeader';
 import Loader from '../../components/Loader';
 import propertyService from '../../api/services/propertyService';
 import { useToast } from '../../context/ToastContext';
-import { buildPropertyPayload } from '../../utils/formatters';
+import { buildPropertyPayload, normalizePropertyType } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
 import { colors } from '../../theme/theme';
 
@@ -29,7 +29,7 @@ const EditProperty = () => {
           description: data.description || '',
           location: data.location || '',
           price: String(data.price ?? ''),
-          propertyType: data.propertyType ?? 1,
+          propertyType: normalizePropertyType(data.propertyType) ?? 1,
           totalUnits: String(data.totalUnits ?? ''),
           occupiedUnits: String(data.occupiedUnits ?? '0'),
           monthlyMaintenanceCost: String(data.monthlyMaintenanceCost ?? ''),

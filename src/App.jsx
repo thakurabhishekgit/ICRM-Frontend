@@ -12,13 +12,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ToastProvider>
-        <NotificationProvider>
-          <BrowserRouter>
-            <AuthProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <NotificationProvider>
               <AppRoutes />
-            </AuthProvider>
-          </BrowserRouter>
-        </NotificationProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </ToastProvider>
     </ThemeProvider>
   );

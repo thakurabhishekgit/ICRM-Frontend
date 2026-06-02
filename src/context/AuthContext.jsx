@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { authService } from '../services/authService';
+import userService from '../api/services/userService';
 
 export const AuthContext = createContext(null);
 
@@ -77,6 +78,27 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(async (updates) => {
+    if (!user?.id) throw new Error('Not authenticated');
+
+    const current = await userService.getUserById(user.id);
+    const payload = {
+      id: user.id,
+      fullName: updates.fullName ?? current.fullName,
+      email: updates.email ?? current.email,
+      phoneNumber: updates.phoneNumber ?? current.phoneNumber,
+      role: current.role,
+      createdAt: current.createdAt,
+    };
+
+    const updated = await userService.updateUser(user.id, payload);
+    const sessionUser = normalizeUser(updated);
+    const token = localStorage.getItem(STORAGE_TOKEN);
+    if (token) persistSession(token, sessionUser);
+    setUser(sessionUser);
+    return sessionUser;
+  }, [user?.id]);
+
   const value = useMemo(
     () => ({
       user,
@@ -85,8 +107,9 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       logout,
+      updateUser,
     }),
-    [user, loading, login, register, logout]
+    [user, loading, login, register, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
