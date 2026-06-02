@@ -7,6 +7,7 @@ import ConfirmationDialog from '../../components/ConfirmationDialog';
 import PageHeader from '../../components/dashboard/PageHeader';
 import leaseRequestService from '../../api/services/leaseRequestService';
 import { useToast } from '../../context/ToastContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { formatDate, getLeaseRequestStatusProps, isLeaseRequestPending, isLeaseRequestApproved } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
 
@@ -14,6 +15,7 @@ const PropertyRequests = () => {
   const { propertyId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { refreshNotifications } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
@@ -41,10 +43,12 @@ const PropertyRequests = () => {
       if (type === 'approve') {
         await leaseRequestService.approveRequest(row.id);
         showToast('Request approved');
+        refreshNotifications();
         navigate(`/agent/create-lease/${row.id}`);
       } else {
         await leaseRequestService.rejectRequest(row.id);
         showToast('Request rejected');
+        refreshNotifications();
         setDialog({ open: false, type: '', row: null });
         fetchRequests();
       }

@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import useAuth from '../hooks/useAuth';
 import { getAdminDashboardStats } from '../services/adminService';
-import { buildPlatformNotifications } from '../services/activityService';
+import { buildPlatformNotifications, buildTenantNotifications } from '../services/activityService';
+import leaseRequestService from '../api/services/leaseRequestService';
+import leaseService from '../api/services/leaseService';
 import { parseApiDate } from '../utils/formatters';
 import { normalizeRole } from '../utils/roleRoutes';
 
 const READ_STORAGE_KEY = 'ircm_read_notification_ids';
+const POLL_INTERVAL_MS = 45000;
 
 const loadReadIds = () => {
   try {
@@ -19,6 +22,14 @@ const saveReadIds = (ids) => {
   localStorage.setItem(READ_STORAGE_KEY, JSON.stringify([...ids]));
 };
 
+const applyReadState = (items) => {
+  const readIds = loadReadIds();
+  return items.map((n) => ({
+    ...n,
+    read: readIds.has(n.id) || (Date.now() - (parseApiDate(n.timestamp)?.getTime() ?? Date.now()) > 7 * 86400000),
+  }));
+};
+
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
@@ -27,38 +38,36 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const refreshNotifications = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       setNotifications([]);
       return;
     }
 
     setLoading(true);
     try {
-      const stats = await getAdminDashboardStats();
-      const readIds = loadReadIds();
-      const role = normalizeRole(user?.role);
-
-      let items = buildPlatformNotifications(stats);
+      const role = normalizeRole(user.role);
+      let items = [];
 
       if (role === 'tenant') {
-        items = items.filter((n) =>
-          n.message?.includes(user.fullName) || n.type === 'request' || n.type === 'lease' || n.type === 'approved'
-        );
+        const [requests, leases] = await Promise.all([
+          leaseRequestService.getMyRequests(),
+          leaseService.getMyLeases(),
+        ]);
+        items = buildTenantNotifications(user, { requests, leases });
       } else if (role === 'agent') {
+        const stats = await getAdminDashboardStats();
         items = buildPlatformNotifications({
           users: [],
           properties: stats.properties.filter((p) => p.agent?.id === user.id),
           requests: stats.requests.filter((r) => r.agent?.id === user.id),
           leases: stats.leases.filter((l) => l.agent?.id === user.id),
         });
+      } else {
+        const stats = await getAdminDashboardStats();
+        items = buildPlatformNotifications(stats);
       }
 
-      setNotifications(
-        items.map((n) => ({
-          ...n,
-          read: readIds.has(n.id) || (Date.now() - (parseApiDate(n.timestamp)?.getTime() ?? Date.now()) > 7 * 86400000),
-        }))
-      );
+      setNotifications(applyReadState(items));
     } catch {
       setNotifications([]);
     } finally {
@@ -69,6 +78,22 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     refreshNotifications();
   }, [refreshNotifications]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+
+    const onFocus = () => refreshNotifications();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+
+    const interval = setInterval(refreshNotifications, POLL_INTERVAL_MS);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, refreshNotifications]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,

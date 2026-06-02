@@ -7,13 +7,18 @@ import { useNotifications } from '../../context/NotificationContext';
 import { colors } from '../../theme/theme';
 
 const NotificationPanel = () => {
-  const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, markRead, refreshNotifications, loading } = useNotifications();
   const [anchor, setAnchor] = useState(null);
+
+  const handleOpen = (e) => {
+    setAnchor(e.currentTarget);
+    refreshNotifications();
+  };
 
   return (
     <>
       <IconButton
-        onClick={(e) => setAnchor(e.currentTarget)}
+        onClick={handleOpen}
         sx={{
           color: colors.textSecondary,
           border: `1px solid ${colors.border}`,
@@ -40,7 +45,10 @@ const NotificationPanel = () => {
         </Box>
         <Divider sx={{ borderColor: colors.border }} />
         <List dense sx={{ py: 0 }}>
-          {notifications.length === 0 && (
+          {loading && notifications.length === 0 && (
+            <Typography variant="body2" sx={{ p: 2, color: colors.textSecondary }}>Loading...</Typography>
+          )}
+          {!loading && notifications.length === 0 && (
             <Typography variant="body2" sx={{ p: 2, color: colors.textSecondary }}>No notifications yet.</Typography>
           )}
           {notifications.map((n) => (

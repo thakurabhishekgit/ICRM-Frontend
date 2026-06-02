@@ -96,6 +96,83 @@ export const buildPlatformActivity = ({ users = [], properties = [], requests = 
   return sortByNewest(events).slice(0, 20).map(withDisplayTime);
 };
 
+/** Notifications for a tenant — own requests, approvals, rejections, leases. */
+export const buildTenantNotifications = (user, { requests = [], leases = [] } = {}, { limit = 12 } = {}) => {
+  const events = [];
+
+  requests.forEach((request) => {
+    events.push({
+      id: `request-${request.id}`,
+      type: 'request',
+      title: 'Lease Request Submitted',
+      description: `You submitted a request for ${request.property?.title || 'a property'}.`,
+      timestamp: request.requestedAt,
+    });
+
+    const status = normalizeRequestStatus(request.status);
+    if (request.reviewedAt && status === 'approved') {
+      events.push({
+        id: `request-approved-${request.id}`,
+        type: 'approved',
+        title: 'Lease Request Approved',
+        description: `${request.agent?.fullName || 'The agent'} approved your request for ${request.property?.title}.`,
+        timestamp: request.reviewedAt,
+      });
+    }
+    if (request.reviewedAt && status === 'rejected') {
+      events.push({
+        id: `request-rejected-${request.id}`,
+        type: 'rejected',
+        title: 'Lease Request Rejected',
+        description: `Your request for ${request.property?.title} was rejected by ${request.agent?.fullName || 'the agent'}.`,
+        timestamp: request.reviewedAt,
+      });
+    }
+  });
+
+  leases.forEach((lease) => {
+    const statusLabel = getLeaseStatusProps(lease.status).label;
+    events.push({
+      id: `lease-${lease.id}`,
+      type: 'lease',
+      title: 'Lease Created',
+      description: `A lease for ${lease.property?.title} was created (${statusLabel}).`,
+      timestamp: lease.createdAt,
+    });
+
+    if (normalizeLeaseStatus(lease.status) === 'active') {
+      events.push({
+        id: `lease-active-${lease.id}`,
+        type: 'active',
+        title: 'Lease Activated',
+        description: `Your lease for ${lease.property?.title} is now Active.`,
+        timestamp: lease.updatedAt || lease.createdAt,
+      });
+    }
+  });
+
+  const typeMap = {
+    request: { type: 'request', title: 'Lease Request Submitted' },
+    approved: { type: 'approved', title: 'Lease Request Approved' },
+    rejected: { type: 'rejected', title: 'Lease Request Rejected' },
+    lease: { type: 'lease', title: 'Lease Update' },
+    active: { type: 'lease', title: 'Lease Activated' },
+  };
+
+  return sortByNewest(events)
+    .slice(0, limit)
+    .map((item) => ({
+      id: item.id,
+      type: typeMap[item.type]?.type || item.type,
+      title: typeMap[item.type]?.title || item.title,
+      message: item.description,
+      timestamp: item.timestamp,
+      time: formatRelativeTime(item.timestamp),
+      dateTime: formatDateTime(item.timestamp),
+      read: false,
+    }));
+};
+
 /** Notifications derived from the same real events (recent first). */
 export const buildPlatformNotifications = (platformData, { limit = 12 } = {}) => {
   const activity = buildPlatformActivity(platformData);
@@ -200,5 +277,6 @@ export const buildUserActivity = (user, { requests = [], leases = [], properties
 export default {
   buildPlatformActivity,
   buildPlatformNotifications,
+  buildTenantNotifications,
   buildUserActivity,
 };

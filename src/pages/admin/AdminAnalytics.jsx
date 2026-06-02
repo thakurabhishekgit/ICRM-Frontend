@@ -62,7 +62,7 @@ const AdminAnalytics = () => {
 
   return (
     <Box>
-      <PageHeader title="AI Insights" subtitle="Business intelligence powered by Gemini — not a chatbot." />
+      <PageHeader title="AI Insights" subtitle="Business intelligence powered by OpenAI — not a chatbot." />
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
