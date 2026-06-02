@@ -18,6 +18,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import { colors } from '../../theme/theme';
 import useAuth from '../../hooks/useAuth';
+import { getDashboardPath } from '../../utils/roleRoutes';
 
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
@@ -123,9 +124,9 @@ const Navbar = () => {
             <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1.5, alignItems: 'center' }}>
               {isAuthenticated ? (
                 <>
-                  <Typography variant="body2" sx={{ color: colors.textSecondary, mr: 1 }}>
-                    {user?.fullName}
-                  </Typography>
+                  <Button variant="contained" color="primary" onClick={() => navigate(getDashboardPath(user?.role))}>
+                    Dashboard
+                  </Button>
                   <Button variant="outlined" color="primary" onClick={logout}>
                     Logout
                   </Button>
@@ -179,9 +180,14 @@ const Navbar = () => {
         </List>
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {isAuthenticated ? (
-            <Button fullWidth variant="outlined" onClick={() => { logout(); setMobileOpen(false); }}>
-              Logout
-            </Button>
+            <>
+              <Button fullWidth variant="contained" onClick={() => { navigate(getDashboardPath(user?.role)); setMobileOpen(false); }}>
+                Dashboard
+              </Button>
+              <Button fullWidth variant="outlined" onClick={() => { logout(); setMobileOpen(false); }}>
+                Logout
+              </Button>
+            </>
           ) : (
             <>
               <Button fullWidth variant="outlined" onClick={() => { navigate('/login'); setMobileOpen(false); }}>

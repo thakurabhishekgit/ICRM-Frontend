@@ -16,12 +16,13 @@ import {
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import useAuth from '../../hooks/useAuth';
+import { getDashboardPath } from '../../utils/roleRoutes';
 import { colors } from '../../theme/theme';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Login = () => {
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,11 +45,11 @@ const Login = () => {
   }, [location.search]);
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+    if (!authLoading && isAuthenticated && user) {
+      const from = location.state?.from?.pathname;
+      navigate(from || getDashboardPath(user.role), { replace: true });
     }
-  }, [authLoading, isAuthenticated, navigate, location.state]);
+  }, [authLoading, isAuthenticated, user, navigate, location.state]);
 
   const emailError = touched.email && !emailRegex.test(email) ? 'Enter a valid email address' : '';
   const passwordError = touched.password && password.length < 6 ? 'Password must be at least 6 characters' : '';
@@ -66,8 +67,9 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(email, password);
-      navigate(location.state?.from?.pathname || '/', { replace: true });
+      const sessionUser = await login(email, password);
+      const from = location.state?.from?.pathname;
+      navigate(from || getDashboardPath(sessionUser.role), { replace: true });
     } catch (err) {
       const message =
         err.response?.data?.message ||
