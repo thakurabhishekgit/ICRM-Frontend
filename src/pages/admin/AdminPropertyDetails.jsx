@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Button, Alert, Paper, Typography, Grid, alpha } from '@mui/material';
+import { Box, Button, Alert, Paper, Typography, Grid, alpha, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PageHeader from '../../components/dashboard/PageHeader';
 import Loader from '../../components/Loader';
 import propertyService from '../../api/services/propertyService';
 import leaseRequestService from '../../api/services/leaseRequestService';
 import leaseService from '../../api/services/leaseService';
+import aiService from '../../api/services/aiService';
+import { useToast } from '../../context/ToastContext';
 import { formatCurrency, getPropertyTypeName, getOccupancyRate } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiHelpers';
 import PropertyThumbnail from '../../components/properties/PropertyThumbnail';
@@ -15,11 +18,14 @@ import { colors } from '../../theme/theme';
 const AdminPropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [property, setProperty] = useState(null);
   const [requestCount, setRequestCount] = useState(0);
   const [leaseCount, setLeaseCount] = useState(0);
   const [error, setError] = useState('');
+  const [roiLoading, setRoiLoading] = useState(false);
+  const [roiResult, setRoiResult] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -36,6 +42,20 @@ const AdminPropertyDetails = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const handleRoiAnalysis = async () => {
+    setRoiLoading(true);
+    setError('');
+    try {
+      const data = await aiService.analyzeRoi(id);
+      setRoiResult(data);
+      showToast('ROI analysis complete');
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setRoiLoading(false);
+    }
+  };
+
   if (loading) return <Loader message="Loading property..." />;
   if (!property) return <Alert severity="error">{error || 'Not found'}</Alert>;
 
@@ -45,6 +65,27 @@ const AdminPropertyDetails = () => {
     <Box>
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin/properties')} sx={{ mb: 2 }}>Back</Button>
       <PageHeader title={property.title} subtitle={property.location} />
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      <Box sx={{ mb: 2 }}>
+        <Button variant="contained" startIcon={roiLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />} onClick={handleRoiAnalysis} disabled={roiLoading}>
+          Analyze ROI with AI
+        </Button>
+      </Box>
+
+      {roiResult && (
+        <Paper sx={{ p: 3, mb: 3, bgcolor: colors.surface, border: `1px solid ${colors.primary}`, borderRadius: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>ROI Score: {roiResult.roiScore}/10</Typography>
+          <Typography sx={{ color: colors.textSecondary, mb: 2 }}>{roiResult.analysis}</Typography>
+          {roiResult.recommendations?.length > 0 && (
+            <List dense>
+              {roiResult.recommendations.map((r) => (
+                <ListItem key={r} sx={{ py: 0 }}><ListItemText primary={r} /></ListItem>
+              ))}
+            </List>
+          )}
+        </Paper>
+      )}
 
       <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
         <PropertyThumbnail thumbnailUrl={property.thumbnailUrl} seed={property.id || property.title} alt={property.title} maxHeight={320} />

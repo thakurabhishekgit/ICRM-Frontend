@@ -2,10 +2,13 @@ import { Box, Container, Typography, Button, alpha } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import useAuth from '../../hooks/useAuth';
+import { getDashboardPath } from '../../utils/roleRoutes';
 import { colors } from '../../theme/theme';
 
 const CtaSection = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Box component="section" sx={{ py: { xs: 8, md: 12 }, px: 2 }}>
@@ -49,22 +52,35 @@ const CtaSection = () => {
             Join teams using IRCM to streamline leasing, tenant management, and portfolio operations.
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardIcon />}
-              onClick={() => navigate('/register')}
-            >
-              Get Started
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<EmailOutlinedIcon />}
-              href="mailto:contact@ircm-platform.com"
-            >
-              Contact Us
-            </Button>
+            {isAuthenticated ? (
+              <Button
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardIcon />}
+                onClick={() => navigate(getDashboardPath(user?.role))}
+              >
+                Go to Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate('/register')}
+                >
+                  Get Started
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<EmailOutlinedIcon />}
+                  href="mailto:contact@ircm-platform.com"
+                >
+                  Contact Us
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
       </Container>

@@ -15,13 +15,14 @@ import {
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import useAuth from '../../hooks/useAuth';
+import { getDashboardPath } from '../../utils/roleRoutes';
 import { colors } from '../../theme/theme';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[+]?[\d\s-]{10,15}$/;
 
 const Register = () => {
-  const { register, isAuthenticated, loading: authLoading } = useAuth();
+  const { register, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -36,10 +37,10 @@ const Register = () => {
   const [touched, setTouched] = useState({});
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate('/', { replace: true });
+    if (!authLoading && isAuthenticated && user) {
+      navigate(getDashboardPath(user.role), { replace: true });
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   const setField = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 

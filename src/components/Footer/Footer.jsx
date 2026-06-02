@@ -1,8 +1,10 @@
 import { Box, Container, Grid, Typography, Link, IconButton, Divider } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import EmailIcon from '@mui/icons-material/Email';
+import useAuth from '../../hooks/useAuth';
 import { colors } from '../../theme/theme';
 
 const FOOTER_SECTIONS = [
@@ -32,6 +34,32 @@ const SOCIAL = [
 ];
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+
+  const handleFooterLink = (e, sectionTitle, label) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      navigate('/home');
+      setTimeout(() => {
+        if (sectionTitle === 'Platform' && label === 'Features') {
+          document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' });
+        } else if (sectionTitle === 'Company' && label === 'About') {
+          document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      return;
+    }
+    if (sectionTitle === 'Platform' && label === 'Features') {
+      document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (sectionTitle === 'Company' && label === 'About') {
+      document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+  };
+
   return (
     <Box
       component="footer"
@@ -94,7 +122,8 @@ const Footer = () => {
                     key={label}
                     href="#"
                     variant="body2"
-                    sx={{ color: colors.textSecondary, '&:hover': { color: colors.primaryLight } }}
+                    onClick={(e) => handleFooterLink(e, section.title, label)}
+                    sx={{ color: colors.textSecondary, cursor: 'pointer', '&:hover': { color: colors.primaryLight } }}
                   >
                     {label}
                   </Link>

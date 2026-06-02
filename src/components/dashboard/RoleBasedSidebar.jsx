@@ -12,6 +12,7 @@ import {
   Tooltip,
   alpha,
 } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SearchIcon from '@mui/icons-material/Search';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -22,6 +23,7 @@ import AddHomeIcon from '@mui/icons-material/AddHome';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import PeopleIcon from '@mui/icons-material/People';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import useAuth from '../../hooks/useAuth';
@@ -31,23 +33,30 @@ import { normalizeRole } from '../../utils/roleRoutes';
 export const DRAWER_WIDTH_EXPANDED = 260;
 export const DRAWER_WIDTH_COLLAPSED = 76;
 
+const HOME_NAV = { text: 'Home', icon: HomeIcon, path: '/home' };
+
 const NAV_BY_ROLE = {
   tenant: [
+    HOME_NAV,
     { text: 'Dashboard', icon: DashboardIcon, path: '/tenant/dashboard' },
     { text: 'Browse Properties', icon: SearchIcon, path: '/properties' },
     { text: 'My Requests', icon: ListAltIcon, path: '/tenant/requests' },
     { text: 'My Leases', icon: ArticleIcon, path: '/tenant/leases' },
+    { text: 'AI Recommendations', icon: AutoAwesomeIcon, path: '/tenant/recommendations' },
     { text: 'Profile', icon: PersonIcon, path: '/profile' },
   ],
   agent: [
+    HOME_NAV,
     { text: 'Dashboard', icon: DashboardIcon, path: '/agent/dashboard' },
     { text: 'My Properties', icon: HomeWorkIcon, path: '/agent/properties' },
     { text: 'Add Property', icon: AddHomeIcon, path: '/agent/properties/create' },
     { text: 'Lease Requests', icon: ListAltIcon, path: '/agent/requests' },
     { text: 'Leases', icon: ArticleIcon, path: '/agent/leases' },
+    { text: 'AI Insights', icon: AutoAwesomeIcon, path: '/agent/analytics' },
     { text: 'Profile', icon: PersonIcon, path: '/profile' },
   ],
   admin: [
+    HOME_NAV,
     { text: 'Dashboard', icon: DashboardIcon, path: '/admin/dashboard' },
     { text: 'Users', icon: PeopleIcon, path: '/admin/users' },
     { text: 'Properties', icon: HomeWorkIcon, path: '/admin/properties' },
@@ -85,6 +94,7 @@ const RoleBasedSidebar = ({
 
   const isActive = (path) => {
     if (path === '/profile') return location.pathname === '/profile';
+    if (path === '/home') return location.pathname === '/home';
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 

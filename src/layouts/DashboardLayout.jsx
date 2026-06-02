@@ -9,9 +9,11 @@ import TopNavbar from '../components/dashboard/TopNavbar';
 import { colors } from '../theme/theme';
 
 const PAGE_TITLES = {
+  '/home': 'Home',
   '/tenant/dashboard': 'Tenant Dashboard',
   '/tenant/requests': 'My Requests',
   '/tenant/leases': 'My Leases',
+  '/tenant/recommendations': 'AI Recommendations',
   '/properties': 'Browse Properties',
   '/settings': 'Settings',
   '/agent/dashboard': 'Agent Dashboard',
@@ -19,6 +21,7 @@ const PAGE_TITLES = {
   '/agent/properties/create': 'Create Property',
   '/agent/requests': 'Lease Requests',
   '/agent/leases': 'Leases',
+  '/agent/analytics': 'AI Insights',
   '/admin/dashboard': 'Admin Dashboard',
   '/admin/users': 'Users',
   '/admin/properties': 'Properties',

@@ -7,12 +7,14 @@ import Login from '../pages/Login/Login';
 import Register from '../pages/Register/Register';
 import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
+import GuestRoute, { RootRedirect } from './GuestRoute';
 
 import TenantDashboard from '../pages/tenant/TenantDashboard';
 import BrowseProperties from '../pages/tenant/BrowseProperties';
 import PropertyDetails from '../pages/tenant/PropertyDetails';
 import MyRequests from '../pages/tenant/MyRequests';
 import MyLeases from '../pages/tenant/MyLeases';
+import TenantRecommendations from '../pages/tenant/TenantRecommendations';
 
 import AgentDashboard from '../pages/agent/AgentDashboard';
 import MyProperties from '../pages/agent/MyProperties';
@@ -47,16 +49,17 @@ const dashboardShell = (allowedRoles) => (
 
 const AppRoutes = () => (
   <Routes>
-    <Route element={<MainLayout />}>
+    <Route element={<GuestRoute><MainLayout /></GuestRoute>}>
       <Route path="/" element={<Home />} />
     </Route>
 
-    <Route element={<AuthLayout />}>
+    <Route element={<GuestRoute><AuthLayout /></GuestRoute>}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
     </Route>
 
     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+      <Route path="/home" element={<Home />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/properties/:id" element={<PropertyDetails />} />
@@ -73,6 +76,7 @@ const AppRoutes = () => (
       <Route path="browse" element={<Navigate to="/properties" replace />} />
       <Route path="requests" element={<MyRequests />} />
       <Route path="leases" element={<MyLeases />} />
+      <Route path="recommendations" element={<TenantRecommendations />} />
     </Route>
 
     <Route path="/agent" element={dashboardShell(['Agent', 'Admin'])}>
@@ -87,6 +91,7 @@ const AppRoutes = () => (
       <Route path="leases" element={<AgentLeases />} />
       <Route path="property/:propertyId/leases" element={<PropertyLeases />} />
       <Route path="create-lease/:leaseRequestId" element={<CreateLease />} />
+      <Route path="analytics" element={<AdminAnalytics />} />
     </Route>
 
     <Route path="/admin" element={dashboardShell(['Admin'])}>
@@ -102,7 +107,7 @@ const AppRoutes = () => (
       <Route path="analytics" element={<AdminAnalytics />} />
     </Route>
 
-    <Route path="*" element={<Navigate to="/" replace />} />
+    <Route path="*" element={<RootRedirect />} />
   </Routes>
 );
 

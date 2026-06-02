@@ -42,8 +42,23 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const goHome = () => {
+    if (isAuthenticated) {
+      navigate('/home');
+      return;
+    }
+    navigate('/');
+  };
+
   const handleNavClick = (href) => {
     setMobileOpen(false);
+    if (isAuthenticated) {
+      navigate('/home');
+      setTimeout(() => {
+        document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return;
+    }
     if (!isHome) {
       navigate('/');
       setTimeout(() => {
@@ -72,7 +87,7 @@ const Navbar = () => {
           <Toolbar disableGutters sx={{ minHeight: { xs: 64, md: 72 }, gap: 2 }}>
             <Box
               sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexGrow: 1 }}
-              onClick={() => navigate('/')}
+              onClick={goHome}
             >
               <Box
                 sx={{

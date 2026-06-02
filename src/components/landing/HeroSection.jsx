@@ -1,10 +1,13 @@
-import { Box, Container, Typography, Button, Chip, alpha } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { Box, Container, Typography, Button, Chip, alpha } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import useAuth from '../../hooks/useAuth';
+import { getDashboardPath } from '../../utils/roleRoutes';
 import { colors } from '../../theme/theme';
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Box
@@ -97,17 +100,30 @@ const HeroSection = () => {
               A modern platform that helps tenants, agents, and administrators manage commercial real estate operations efficiently.
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              <Button
-                variant="contained"
-                size="large"
-                endIcon={<ArrowForwardIcon />}
-                onClick={() => navigate('/register')}
-              >
-                Get Started
-              </Button>
-              <Button variant="outlined" size="large" onClick={() => navigate('/login')}>
-                Login
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate(getDashboardPath(user?.role))}
+                >
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    endIcon={<ArrowForwardIcon />}
+                    onClick={() => navigate('/register')}
+                  >
+                    Get Started
+                  </Button>
+                  <Button variant="outlined" size="large" onClick={() => navigate('/login')}>
+                    Login
+                  </Button>
+                </>
+              )}
             </Box>
           </Box>
 
