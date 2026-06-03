@@ -59,7 +59,6 @@ const AdminDashboard = () => {
     name: p.title?.slice(0, 14) || 'Property',
     occupancy: p.totalUnits ? Math.round((p.occupiedUnits / p.totalUnits) * 100) : 0,
   }));
-
   const userDist = [
     { role: 'Tenants', count: stats.totalTenants },
     { role: 'Agents', count: stats.totalAgents },
